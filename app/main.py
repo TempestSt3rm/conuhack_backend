@@ -17,12 +17,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Get database URL from Railway
-DATABASE_URL = os.getenv('DATABASE_URL')
-
 @app.get("/")
 def home():
     return {"message": "Hello from FastAPI on Railway!"}
+
+@app.get("/health")
+def health_check():
+    return {"status": "ok"}
 
 @app.get("/get_user")
 def get_user(email: str = Query(..., description="User's email")):
