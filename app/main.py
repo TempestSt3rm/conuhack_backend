@@ -332,7 +332,7 @@ def verify_user(email: str):
         WHERE email = %s LIMIT 1;
         ''', (email,))
         
-        result = cur.fetchone()  # Get a single row (tuple) instead of fetchall()
+        result = cur.fetchall()  # Get a single row (tuple) instead of fetchall()
         print(result)
         cur.close()
         conn.close()
