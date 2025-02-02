@@ -181,41 +181,51 @@ class Transaction(BaseModel):
     category_id: int
     source: str
     recurring : Optional[str]
+from pydantic import BaseModel
+from typing import Optional
 
+# Define the request model
 class AddedTransaction(BaseModel):
     user_id: int
     date: str  # Use datetime.date if necessary
     amount: float
-    category_id: str
+    category_name: str  # Changed from category_id to category_name (string)
     source: str
-    recurring : Optional[str]
-
+    recurring: Optional[bool]  # Changed to bool for consistency
 
 # Add Transaction
 @app.post("/transactions/add_transaction")
 def add_transaction(transaction: AddedTransaction):
     try:
+        # Get the category_id from the name
+        category_id = REVERSE_CATEGORY_DICT.get(transaction.category_name)
+
+        # Handle missing category
+        if category_id is None:
+            raise HTTPException(status_code=400, detail=f"Invalid category: {transaction.category_name}")
+
         conn = psycopg2.connect(DATABASE_URL)
         cur = conn.cursor()
         cur.execute(
-            'INSERT INTO "transactions" (user_id, date, amount, category_id, source) '
+            'INSERT INTO "transactions" (user_id, date, amount, category_id, source, recurring) '
             'VALUES (%s, %s, %s, %s, %s, %s) RETURNING id;',
-            (transaction.user_id, transaction.date, transaction.amount, 
-             REVERSE_CATEGORY_DICT[transaction.category_id], transaction.source, transaction.recurring)
+            (transaction.user_id, transaction.date, transaction.amount, category_id, transaction.source, transaction.recurring)
         )
         transaction_id = cur.fetchone()[0]  # Get the auto-generated ID
         conn.commit()
         cur.close()
         conn.close()
+        
         return {
             "id": transaction_id,  # Return the newly generated ID
             "user_id": transaction.user_id,
             "date": transaction.date,
             "amount": transaction.amount,
-            "category_id": REVERSE_CATEGORY_DICT[transaction.category_id],
+            "category_id": category_id,
             "source": transaction.source,
-            "recurring" : transaction.recurring
+            "recurring": transaction.recurring
         }
+    
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {e}")
 
