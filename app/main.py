@@ -211,6 +211,31 @@ def add_transaction(transaction: Transaction):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {e}")
 
+# Get All Transactions by user_id
+@app.get("/transactions/get_transactions_by_user")
+def get_transactions_by_user(user_id: int):
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
+        cur = conn.cursor()
+        cur.execute('''
+            SELECT id, user_id, date, amount, category_id, source, recurring
+            FROM "transactions"
+            WHERE user_id = %s;
+        ''', (user_id,))
+        
+        transactions = cur.fetchall()
+        cur.close()
+        conn.close()
+
+        if transactions:
+            return [{"id": t[0], "user_id": t[1], "date": t[2], "amount": t[3], 
+                     "category_id": t[4], "source": t[5], "recurring": t[6]} for t in transactions]
+        else:
+            return {"message": f"No transactions found for user_id {user_id}"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error: {e}")
+
+
 # Get All Transactions
 @app.get("/transactions/get_all_transactions")
 def get_all_transactions():
