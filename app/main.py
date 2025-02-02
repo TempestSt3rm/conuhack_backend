@@ -328,7 +328,7 @@ def verify_user(email: str):
         print("before")
 
         cur.execute('''
-        SELECT id,email FROM users 
+        SELECT id,email,name FROM users 
         WHERE email = %s LIMIT 1;
         ''', (email,))
         
@@ -338,7 +338,7 @@ def verify_user(email: str):
         conn.close()
 
         if result:
-            return {"isValid":True,"id": result[0] }  # Return user_id if found
+            return {"isValid":True,"id": result[0][0],"email": result[0][1],"name": result[0][2] }  # Return user_id if found
         else:
             return {"isValid":True,"username": None }  # Return None if email not found
 
