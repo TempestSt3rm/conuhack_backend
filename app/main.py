@@ -228,8 +228,12 @@ def get_transactions_by_user(user_id: int):
         conn.close()
 
         if transactions:
-            return [{"id": t[0], "user_id": t[1], "date": t[2], "amount": t[3], 
-                     "category_id": t[4], "source": t[5], "recurring": t[6]} for t in transactions]
+            
+            return [{
+                "id": t[0], "user_id": t[1], "date": t[2], "amount": t[3], 
+                "category_id": t[4], "source": t[5], "recurring": t[6], 
+                "type": "income" if t[3] >= 0 else "expense"
+                } for t in transactions]
         else:
             return {"message": f"No transactions found for user_id {user_id}"}
     except Exception as e:
