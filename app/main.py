@@ -182,15 +182,16 @@ def delete_category(id: int = Query(..., description="ID of the category to dele
         raise HTTPException(status_code=500, detail=f"Error: {e}")
 
 
-# Pydantic model for transactions
+from pydantic import BaseModel
+from typing import Optional
+
 class Transaction(BaseModel):
-    id: int
     user_id: int
-    date: str
+    date: str  # If using `datetime.date`, convert accordingly
     amount: float
     category_id: int
-    source: str = None
-    recurring: str = None
+    source: str
+    recurring: bool  # Ensure it's a boolean
 
 # Add Transaction
 @app.post("/transactions/add_transaction")
