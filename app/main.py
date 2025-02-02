@@ -173,15 +173,12 @@ def delete_category(id: int = Query(..., description="ID of the category to dele
 from pydantic import BaseModel
 from typing import Optional
 
-
-
 class Transaction(BaseModel):
     user_id: int
     date: str  # Use datetime.date if necessary
     amount: float
     category_id: int
     source: str
-    recurring: Optional[str] = None  # Optional, allows null values
 
 # Add Transaction
 @app.post("/transactions/add_transaction")
@@ -190,10 +187,10 @@ def add_transaction(transaction: Transaction):
         conn = psycopg2.connect(DATABASE_URL)
         cur = conn.cursor()
         cur.execute(
-            'INSERT INTO "transactions" (user_id, date, amount, category_id, source, recurring) '
-            'VALUES (%s, %s, %s, %s, %s, %s) RETURNING id;',
+            'INSERT INTO "transactions" (user_id, date, amount, category_id, source) '
+            'VALUES (%s, %s, %s, %s, %s) RETURNING id;',
             (transaction.user_id, transaction.date, transaction.amount, 
-             transaction.category_id, transaction.source, transaction.recurring)
+             transaction.category_id, transaction.source)
         )
         transaction_id = cur.fetchone()[0]  # Get the auto-generated ID
         conn.commit()
@@ -206,7 +203,6 @@ def add_transaction(transaction: Transaction):
             "amount": transaction.amount,
             "category_id": transaction.category_id,
             "source": transaction.source,
-            "recurring": transaction.recurring
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {e}")
