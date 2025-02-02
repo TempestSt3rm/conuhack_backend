@@ -2,6 +2,7 @@ import os
 import psycopg2
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 from dotenv import load_dotenv
 import uvicorn
 
@@ -10,7 +11,6 @@ load_dotenv()
 app = FastAPI()
 
 DATABASE_URL = os.getenv('DATABASE_URL')
-print(DATABASE_URL) 
 
 # Enable CORS (same as Flask CORS)
 app.add_middleware(
@@ -21,34 +21,237 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# User Pydantic model
+class User(BaseModel):
+    id: int
+    name: str
+    email: str
+
+# Category Pydantic model
+class Category(BaseModel):
+    id: int
+    name: str
+
+# Transaction Pydantic model
+class Transaction(BaseModel):
+    id: int
+    user_id: int
+    date: str
+    amount: float
+    category_id: int
+    payment_method: str = None
+    merchant: str = None
+    source: str = None
+    recurring: str = None
+
+# Home endpoint
 @app.get("/")
 def home():
-    return {"message": "Hello from FastAPI on Railway!"}
+    return {"message": "Hello from FastAPI!"}
 
+# Health check endpoint
 @app.get("/health")
 def health_check():
     return {"status": "ok"}
 
-@app.get("/get_user")
+# CRUD for users
+@app.get("/users/get_user")
 def get_user(email: str = Query(..., description="User's email")):
-    """Fetch user data by email."""
     try:
-        conn = psycopg2.connect(DATABASE_URL)  # Connects to the database
-        cur = conn.cursor()  # Create a cursor to interact with the database
-        cur.execute('SELECT id, email FROM "user" WHERE email = %s;', (email,))  # Query the database
-        user_info = cur.fetchone()  # Get the first record (if any)
+        conn = psycopg2.connect(DATABASE_URL)
+        cur = conn.cursor()
+        cur.execute('SELECT id, name, email FROM "users" WHERE email = %s;', (email,))
+        user_info = cur.fetchone()
         cur.close()
-        conn.close()  # Close the database connection
+        conn.close()
 
         if user_info:
-            return {"id": user_info[0], "email": user_info[1]}  # Return user data
+            return {"id": user_info[0], "name": user_info[1], "email": user_info[2]}
         else:
             raise HTTPException(status_code=404, detail="User not found")
-    
-    except psycopg2.OperationalError as e:
-        raise HTTPException(status_code=500, detail=f"Database connection error: {e}")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Unexpected error: {e}")
+        raise HTTPException(status_code=500, detail=f"Error: {e}")
+
+@app.post("/users/add_user")
+def add_user(user: User):
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
+        cur = conn.cursor()
+        cur.execute('INSERT INTO "users" (id, name, email) VALUES (%s, %s, %s) RETURNING id;', 
+                    (user.id, user.name, user.email))
+        user_id = cur.fetchone()[0]
+        conn.commit()
+        cur.close()
+        conn.close()
+        return {"id": user_id, "name": user.name, "email": user.email}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error: {e}")
+
+@app.get("/users/get_all_users")
+def get_all_users():
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
+        cur = conn.cursor()
+        cur.execute('SELECT id, name, email FROM "users";')
+        users = cur.fetchall()
+        cur.close()
+        conn.close()
+
+        if users:
+            return [{"id": user[0], "name": user[1], "email": user[2]} for user in users]
+        else:
+            return {"message": "No users found"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error: {e}")
+
+@app.delete("/users/delete_user")
+def delete_user(email: str = Query(..., description="Email of the user to delete")):
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
+        cur = conn.cursor()
+        cur.execute('DELETE FROM "users" WHERE email = %s RETURNING id, name, email;', (email,))
+        user_info = cur.fetchone()
+        if user_info:
+            conn.commit()
+            cur.close()
+            conn.close()
+            return {"message": f"User with email {email} has been deleted.", "user": {"id": user_info[0], "name": user_info[1], "email": user_info[2]}}
+        else:
+            cur.close()
+            conn.close()
+            raise HTTPException(status_code=404, detail="User not found")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error: {e}")
+
+
+# CRUD for categories
+@app.post("/categories/add_category")
+def add_category(category: Category):
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
+        cur = conn.cursor()
+        cur.execute('INSERT INTO "categories" (name) VALUES (%s) RETURNING id;', 
+                    (category.name,))
+        category_id = cur.fetchone()[0]
+        conn.commit()
+        cur.close()
+        conn.close()
+        return {"id": category_id, "name": category.name}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error: {e}")
+
+@app.get("/categories/get_all_categories")
+def get_all_categories():
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
+        cur = conn.cursor()
+        cur.execute('SELECT id, name FROM "categories";')
+        categories = cur.fetchall()
+        cur.close()
+        conn.close()
+
+        if categories:
+            return [{"id": category[0], "name": category[1]} for category in categories]
+        else:
+            return {"message": "No categories found"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error: {e}")
+
+@app.delete("/categories/delete_category")
+def delete_category(id: int = Query(..., description="ID of the category to delete")):
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
+        cur = conn.cursor()
+        cur.execute('DELETE FROM "categories" WHERE id = %s RETURNING id, name;', (id,))
+        category_info = cur.fetchone()
+        if category_info:
+            conn.commit()
+            cur.close()
+            conn.close()
+            return {"message": f"Category with ID {id} has been deleted.", "category": {"id": category_info[0], "name": category_info[1]}}
+        else:
+            cur.close()
+            conn.close()
+            raise HTTPException(status_code=404, detail="Category not found")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error: {e}")
+
+
+# Pydantic model for transactions
+class Transaction(BaseModel):
+    id: int
+    user_id: int
+    date: str
+    amount: float
+    category_id: int
+    source: str = None
+    recurring: str = None
+
+# Add Transaction
+@app.post("/transactions/add_transaction")
+def add_transaction(transaction: Transaction):
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
+        cur = conn.cursor()
+        cur.execute(
+            'INSERT INTO "transactions" (id, user_id, date, amount, category_id, source, recurring) '
+            'VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id;',
+            (transaction.id, transaction.user_id, transaction.date, transaction.amount, 
+             transaction.category_id, transaction.source, transaction.recurring)
+        )
+        transaction_id = cur.fetchone()[0]
+        conn.commit()
+        cur.close()
+        conn.close()
+        return {"id": transaction_id, "user_id": transaction.user_id, "date": transaction.date,
+                "amount": transaction.amount, "category_id": transaction.category_id,
+                "source": transaction.source, "recurring": transaction.recurring}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error: {e}")
+
+# Get All Transactions
+@app.get("/transactions/get_all_transactions")
+def get_all_transactions():
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
+        cur = conn.cursor()
+        cur.execute('SELECT id, user_id, date, amount, category_id, source, recurring FROM "transactions";')
+        transactions = cur.fetchall()
+        cur.close()
+        conn.close()
+
+        if transactions:
+            return [{"id": t[0], "user_id": t[1], "date": t[2], "amount": t[3], 
+                     "category_id": t[4], "source": t[5], "recurring": t[6]} for t in transactions]
+        else:
+            return {"message": "No transactions found"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error: {e}")
+
+# Delete Transaction
+@app.delete("/transactions/delete_transaction")
+def delete_transaction(id: int = Query(..., description="ID of the transaction to delete")):
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
+        cur = conn.cursor()
+        cur.execute(
+            'DELETE FROM "transactions" WHERE id = %s RETURNING id, user_id, date, amount, category_id, source, recurring;',
+            (id,))
+        transaction_info = cur.fetchone()
+        if transaction_info:
+            conn.commit()
+            cur.close()
+            conn.close()
+            return {"message": f"Transaction with ID {id} has been deleted.", 
+                    "transaction": {"id": transaction_info[0], "user_id": transaction_info[1], "date": transaction_info[2],
+                                    "amount": transaction_info[3], "category_id": transaction_info[4],
+                                    "source": transaction_info[5], "recurring": transaction_info[6]}}
+        else:
+            cur.close()
+            conn.close()
+            raise HTTPException(status_code=404, detail="Transaction not found")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error: {e}")
 
 # Run with: uvicorn app:app --host 0.0.0.0 --port 8000
 if __name__ == "__main__":
