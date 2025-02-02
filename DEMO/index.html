@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finance Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <h1>Finance Dashboard</h1>
+
+    <!-- Users Section -->
+    <section>
+        <h2>Users</h2>
+        <input id="userName" type="text" placeholder="Name">
+        <input id="userEmail" type="email" placeholder="Email">
+        <button onclick="addUser()">Add User</button>
+        <ul id="usersList"></ul>
+    </section>
+
+    <!-- Categories Section -->
+    <section>
+        <h2>Categories</h2>
+        <input id="categoryName" type="text" placeholder="Category Name">
+        <button onclick="addCategory()">Add Category</button>
+        <ul id="categoriesList"></ul>
+    </section>
+
+    <!-- Transactions Section -->
+    <section>
+        <h2>Transactions</h2>
+        <input id="transactionUserId" type="number" placeholder="User ID">
+        <input id="transactionDate" type="date">
+        <input id="transactionAmount" type="number" placeholder="Amount">
+        
+        <select id="transactionCategoryId">
+            <option value="essentials">Essentials</option>
+            <option value="discretionary">Discretionary</option>
+            <option value="debt_payment">Debt Payment</option>
+            <option value="investment">Investment</option>
+            <option value="miscellaneous">Miscellaneous</option>
+            <option value="saving">Saving</option>
+            <option value="income">Income</option>
+        </select>
+        <input id="transactionSource" type="text" placeholder="Source">
+        <input id="transactionRecurring" type="text" placeholder="Recurring (monthly/weekly/yearly)">
+        <button onclick="addTransaction()">Add Transaction</button>
+        <ul id="transactionsList"></ul>
+    </section>
+
+    <script src="script.js"></script>
+</body>
+</html>
