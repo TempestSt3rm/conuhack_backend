@@ -179,6 +179,7 @@ class Transaction(BaseModel):
     amount: float
     category_id: int
     source: str
+    recurring : Optional[str]
 
 # Add Transaction
 @app.post("/transactions/add_transaction")
@@ -188,9 +189,9 @@ def add_transaction(transaction: Transaction):
         cur = conn.cursor()
         cur.execute(
             'INSERT INTO "transactions" (user_id, date, amount, category_id, source) '
-            'VALUES (%s, %s, %s, %s, %s) RETURNING id;',
+            'VALUES (%s, %s, %s, %s, %s, %s) RETURNING id;',
             (transaction.user_id, transaction.date, transaction.amount, 
-             transaction.category_id, transaction.source)
+             transaction.category_id, transaction.source, transaction.recurring)
         )
         transaction_id = cur.fetchone()[0]  # Get the auto-generated ID
         conn.commit()
@@ -203,6 +204,7 @@ def add_transaction(transaction: Transaction):
             "amount": transaction.amount,
             "category_id": transaction.category_id,
             "source": transaction.source,
+            "recurring" : transaction.recurring
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {e}")
