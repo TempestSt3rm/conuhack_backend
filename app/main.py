@@ -281,7 +281,7 @@ def get_all_transactions():
 
 # Delete Transaction
 #
-@app.get("/transactions/delete_transaction")
+@app.delete("/transactions/delete_transaction/{id}")
 def delete_transaction(id: int = Query(..., description="ID of the transaction to delete")):
     try:
         conn = psycopg2.connect(DATABASE_URL)
