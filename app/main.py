@@ -10,7 +10,7 @@ load_dotenv()
 
 app = FastAPI()
 
-DATABASE_URL = os.getenv('DATABASE_URL')
+DATABASE_URL = os.getenv('DATABASE_PUBLIC_URL')
 
 # Enable CORS (same as Flask CORS)
 app.add_middleware(
