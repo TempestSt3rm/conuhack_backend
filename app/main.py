@@ -184,25 +184,28 @@ class Transaction(BaseModel):
 from pydantic import BaseModel
 from typing import Optional
 
+from pydantic import BaseModel
+from typing import Optional
+
 # Define the request model
 class AddedTransaction(BaseModel):
     user_id: int
-    date: str  # Use datetime.date if necessary
+    date: str  # Can be datetime.date if needed
     amount: float
-    category_name: str  # Changed from category_id to category_name (string)
+    category_id: str  # Accept category name as a string
     source: str
-    recurring: Optional[bool]  # Changed to bool for consistency
+    recurring: Optional[str] = None  # Keep recurring optional
 
 # Add Transaction
 @app.post("/transactions/add_transaction")
 def add_transaction(transaction: AddedTransaction):
     try:
-        # Get the category_id from the name
-        category_id = REVERSE_CATEGORY_DICT.get(transaction.category_name)
+        # Convert category name to category_id
+        category_id = REVERSE_CATEGORY_DICT.get(transaction.category_id)
 
         # Handle missing category
         if category_id is None:
-            raise HTTPException(status_code=400, detail=f"Invalid category: {transaction.category_name}")
+            raise HTTPException(status_code=400, detail=f"Invalid category: {transaction.category_id}")
 
         conn = psycopg2.connect(DATABASE_URL)
         cur = conn.cursor()
@@ -217,7 +220,7 @@ def add_transaction(transaction: AddedTransaction):
         conn.close()
         
         return {
-            "id": transaction_id,  # Return the newly generated ID
+            "id": transaction_id,  # Return the generated ID
             "user_id": transaction.user_id,
             "date": transaction.date,
             "amount": transaction.amount,
