@@ -232,7 +232,7 @@ def add_transaction(transaction: AddedTransaction):
 
 
 # Get All Transactions by user_id
-@app.get("/transactions/get_transactions_by_user")
+@app.get("/transactions/get_transactions_by_user/{user_id}")
 def get_transactions_by_user(user_id: int):
     try:
         conn = psycopg2.connect(DATABASE_URL)
@@ -280,15 +280,6 @@ def get_all_transactions():
         raise HTTPException(status_code=500, detail=f"Error: {e}")
 
 # Delete Transaction
-
-from fastapi import FastAPI, HTTPException
-import psycopg2
-from starlette.config import Config
-
-app = FastAPI()
-
-DATABASE_URL = Config().get("DATABASE_URL")
-
 @app.delete("/transactions/delete_transaction/{id}")
 def delete_transaction(id: int):
     try:
