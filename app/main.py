@@ -338,7 +338,7 @@ def verify_user(email: str):
         conn.close()
 
         if result:
-            return {"isValid":True,"username": result[0] }  # Return user_id if found
+            return {"isValid":True,"id": result[0],"username": result[1] }  # Return user_id if found
         else:
             return {"isValid":True,"username": None }  # Return None if email not found
 
