@@ -185,13 +185,16 @@ def delete_category(id: int = Query(..., description="ID of the category to dele
 from pydantic import BaseModel
 from typing import Optional
 
+from pydantic import BaseModel
+from typing import Optional
+
 class Transaction(BaseModel):
     user_id: int
-    date: str  # If using `datetime.date`, convert accordingly
+    date: str  # Can be changed to datetime.date if needed
     amount: float
     category_id: int
     source: str
-    recurring: str  # Ensure it's a boolean
+    recurring: Optional[str] = None  # Now optional and can be null
 
 # Add Transaction
 @app.post("/transactions/add_transaction")
