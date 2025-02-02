@@ -32,6 +32,7 @@ class Category(BaseModel):
     name: str
 
 CATEGORY_DICT = {1:"essentials",2:"discretionary",3:"debt_payment",4:"investment",5:"miscallaneous",6:"saving",7:"income"}
+REVERSE_CATEGORY_DICT = {v: k for k, v in CATEGORY_DICT.items()}
 
 
 # Home endpoint
@@ -181,9 +182,18 @@ class Transaction(BaseModel):
     source: str
     recurring : Optional[str]
 
+class AddedTransaction(BaseModel):
+    user_id: int
+    date: str  # Use datetime.date if necessary
+    amount: float
+    category: str
+    source: str
+    recurring : Optional[str]
+
+
 # Add Transaction
 @app.post("/transactions/add_transaction")
-def add_transaction(transaction: Transaction):
+def add_transaction(transaction: AddedTransaction):
     try:
         conn = psycopg2.connect(DATABASE_URL)
         cur = conn.cursor()
@@ -191,7 +201,7 @@ def add_transaction(transaction: Transaction):
             'INSERT INTO "transactions" (user_id, date, amount, category_id, source) '
             'VALUES (%s, %s, %s, %s, %s, %s) RETURNING id;',
             (transaction.user_id, transaction.date, transaction.amount, 
-             transaction.category_id, transaction.source, transaction.recurring)
+             REVERSE_CATEGORY_DICT[transaction.category], transaction.source, transaction.recurring)
         )
         transaction_id = cur.fetchone()[0]  # Get the auto-generated ID
         conn.commit()
@@ -202,7 +212,7 @@ def add_transaction(transaction: Transaction):
             "user_id": transaction.user_id,
             "date": transaction.date,
             "amount": transaction.amount,
-            "category_id": transaction.category_id,
+            "category_id": REVERSE_CATEGORY_DICT[transaction.category_id],
             "source": transaction.source,
             "recurring" : transaction.recurring
         }
