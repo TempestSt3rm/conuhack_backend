@@ -338,9 +338,9 @@ def verify_user(email: str):
         conn.close()
 
         if result:
-            return {"isVald":True,"username": result[0] }  # Return user_id if found
+            return {"isValid":True,"username": result[0] }  # Return user_id if found
         else:
-            return {"isVald":True,"username": None }  # Return None if email not found
+            return {"isValid":True,"username": None }  # Return None if email not found
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
