@@ -184,8 +184,6 @@ class Transaction(BaseModel):
 from pydantic import BaseModel
 from typing import Optional
 
-from pydantic import BaseModel
-from typing import Optional
 
 # Define the request model
 class AddedTransaction(BaseModel):
