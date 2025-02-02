@@ -43,6 +43,9 @@ class Transaction(BaseModel):
     source: str = None
     recurring: str = None
 
+CATEGORY_DICT = {1:"essentials",2:"discretionary",3:"debt_payment",4:"investment",5:"miscallaneous",6:"saving",7:"income"}
+
+
 # Home endpoint
 @app.get("/")
 def home():
@@ -230,8 +233,8 @@ def get_transactions_by_user(user_id: int):
         if transactions:
             
             return [{
-                "id": t[0], "user_id": t[1], "date": t[2], "amount": t[3], 
-                "category_id": t[4], "source": t[5], "recurring": t[6], 
+                "id": t[0], "date": t[2], "amount": t[3], 
+                "category": t[4], "description": t[5], "recurring": t[6], 
                 "type": "income" if t[3] >= 0 else "expense"
                 } for t in transactions]
         else:
@@ -253,7 +256,7 @@ def get_all_transactions():
 
         if transactions:
             return [{"id": t[0], "user_id": t[1], "date": t[2], "amount": t[3], 
-                     "category_id": t[4], "source": t[5], "recurring": t[6]} for t in transactions]
+                     "category": CATEGORY_DICT[t[4]], "source": t[5], "recurring": t[6]} for t in transactions]
         else:
             return {"message": "No transactions found"}
     except Exception as e:
