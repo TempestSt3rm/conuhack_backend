@@ -31,18 +31,6 @@ class Category(BaseModel):
     id: int
     name: str
 
-# Transaction Pydantic model
-class Transaction(BaseModel):
-    id: int
-    user_id: int
-    date: str
-    amount: float
-    category_id: int
-    payment_method: str = None
-    merchant: str = None
-    source: str = None
-    recurring: str = None
-
 CATEGORY_DICT = {1:"essentials",2:"discretionary",3:"debt_payment",4:"investment",5:"miscallaneous",6:"saving",7:"income"}
 
 
@@ -185,16 +173,15 @@ def delete_category(id: int = Query(..., description="ID of the category to dele
 from pydantic import BaseModel
 from typing import Optional
 
-from pydantic import BaseModel
-from typing import Optional
+
 
 class Transaction(BaseModel):
     user_id: int
-    date: str  # Can be changed to datetime.date if needed
+    date: str  # Use datetime.date if necessary
     amount: float
     category_id: int
     source: str
-    recurring: Optional[str] = None  # Now optional and can be null
+    recurring: Optional[str] = None  # Optional, allows null values
 
 # Add Transaction
 @app.post("/transactions/add_transaction")
@@ -208,15 +195,22 @@ def add_transaction(transaction: Transaction):
             (transaction.user_id, transaction.date, transaction.amount, 
              transaction.category_id, transaction.source, transaction.recurring)
         )
-        transaction_id = cur.fetchone()[0]
+        transaction_id = cur.fetchone()[0]  # Get the auto-generated ID
         conn.commit()
         cur.close()
         conn.close()
-        return {"id": transaction_id, "user_id": transaction.user_id, "date": transaction.date,
-                "amount": transaction.amount, "category_id": transaction.category_id,
-                "source": transaction.source, "recurring": transaction.recurring}
+        return {
+            "id": transaction_id,  # Return the newly generated ID
+            "user_id": transaction.user_id,
+            "date": transaction.date,
+            "amount": transaction.amount,
+            "category_id": transaction.category_id,
+            "source": transaction.source,
+            "recurring": transaction.recurring
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {e}")
+
 
 # Get All Transactions by user_id
 @app.get("/transactions/get_transactions_by_user")
