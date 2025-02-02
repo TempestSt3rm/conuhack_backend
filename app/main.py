@@ -280,30 +280,43 @@ def get_all_transactions():
         raise HTTPException(status_code=500, detail=f"Error: {e}")
 
 # Delete Transaction
-#
+
+from fastapi import FastAPI, HTTPException
+import psycopg2
+from starlette.config import Config
+
+app = FastAPI()
+
+DATABASE_URL = Config().get("DATABASE_URL")
+
 @app.delete("/transactions/delete_transaction/{id}")
-def delete_transaction(id: int = Query(..., description="ID of the transaction to delete")):
+def delete_transaction(id: int):
     try:
-        conn = psycopg2.connect(DATABASE_URL)
-        cur = conn.cursor()
-        cur.execute(
-            'DELETE FROM "transactions" WHERE id = %s RETURNING id, user_id, date, amount, category_id, source, recurring;',
-            (id,))
-        transaction_info = cur.fetchone()
-        if transaction_info:
-            conn.commit()
-            cur.close()
-            conn.close()
-            return {"message": f"Transaction with ID {id} has been deleted.", 
-                    "transaction": {"id": transaction_info[0], "user_id": transaction_info[1], "date": transaction_info[2],
-                                    "amount": transaction_info[3], "category_id": transaction_info[4],
-                                    "source": transaction_info[5], "recurring": transaction_info[6]}}
-        else:
-            cur.close()
-            conn.close()
-            raise HTTPException(status_code=404, detail="Transaction not found")
+        with psycopg2.connect(DATABASE_URL) as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    'DELETE FROM "transactions" WHERE id = %s RETURNING id, user_id, date, amount, category_id, source, recurring;',
+                    (id,))
+                
+                transaction_info = cur.fetchone()
+                
+                if transaction_info:
+                    conn.commit()
+                    return {
+                        "message": f"Transaction with ID {id} has been deleted.",
+                        "transaction": {
+                            "id": transaction_info[0], "user_id": transaction_info[1],
+                            "date": transaction_info[2], "amount": transaction_info[3],
+                            "category_id": transaction_info[4], "source": transaction_info[5],
+                            "recurring": transaction_info[6]
+                        }
+                    }
+                else:
+                    raise HTTPException(status_code=404, detail="Transaction not found")
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {e}")
+
 
 @app.put("/transactions/update_transaction")
 def update_transaction(id: int, transaction: Transaction):
