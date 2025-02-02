@@ -319,6 +319,31 @@ def update_transaction(id: int, transaction: Transaction):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {e}")
+    
+@app.get("/verify_user")
+def verify_user(email: str):
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
+        cur = conn.cursor()
+        print("before")
+
+        cur.execute('''
+        SELECT id FROM users 
+        WHERE email = %s LIMIT 1;
+        ''', (email,))
+        
+        result = cur.fetchone()  # Get a single row (tuple) instead of fetchall()
+        print(result)
+        cur.close()
+        conn.close()
+
+        if result:
+            return {"isVald":True,"username": result[0] }  # Return user_id if found
+        else:
+            return {"isVald":True,"username": None }  # Return None if email not found
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
 
 # Run with: uvicorn app:app --host 0.0.0.0 --port 8000
