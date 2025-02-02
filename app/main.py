@@ -31,19 +31,8 @@ class Category(BaseModel):
     id: int
     name: str
 
-# Transaction Pydantic model
-class Transaction(BaseModel):
-    id: int
-    user_id: int
-    date: str
-    amount: float
-    category_id: int
-    payment_method: str = None
-    merchant: str = None
-    source: str = None
-    recurring: str = None
-
 CATEGORY_DICT = {1:"essentials",2:"discretionary",3:"debt_payment",4:"investment",5:"miscallaneous",6:"saving",7:"income"}
+REVERSE_CATEGORY_DICT = {v: k for k, v in CATEGORY_DICT.items()}
 
 
 # Home endpoint
@@ -182,37 +171,65 @@ def delete_category(id: int = Query(..., description="ID of the category to dele
         raise HTTPException(status_code=500, detail=f"Error: {e}")
 
 
-# Pydantic model for transactions
+from pydantic import BaseModel
+from typing import Optional
+
 class Transaction(BaseModel):
-    id: int
     user_id: int
-    date: str
+    date: str  # Use datetime.date if necessary
     amount: float
     category_id: int
-    source: str = None
-    recurring: str = None
+    source: str
+    recurring : Optional[str]
+from pydantic import BaseModel
+from typing import Optional
+
+
+# Define the request model
+class AddedTransaction(BaseModel):
+    user_id: int
+    date: str  # Can be datetime.date if needed
+    amount: float
+    category_id: str  # Accept category name as a string
+    source: str
+    recurring: Optional[str] = None  # Keep recurring optional
 
 # Add Transaction
 @app.post("/transactions/add_transaction")
-def add_transaction(transaction: Transaction):
+def add_transaction(transaction: AddedTransaction):
     try:
+        # Convert category name to category_id
+        category_id = REVERSE_CATEGORY_DICT.get(transaction.category_id)
+
+        # Handle missing category
+        if category_id is None:
+            raise HTTPException(status_code=400, detail=f"Invalid category: {transaction.category_id}")
+
         conn = psycopg2.connect(DATABASE_URL)
         cur = conn.cursor()
         cur.execute(
-            'INSERT INTO "transactions" (id, user_id, date, amount, category_id, source, recurring) '
-            'VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id;',
-            (transaction.id, transaction.user_id, transaction.date, transaction.amount, 
-             transaction.category_id, transaction.source, transaction.recurring)
+            'INSERT INTO "transactions" (user_id, date, amount, category_id, source, recurring) '
+            'VALUES (%s, %s, %s, %s, %s, %s) RETURNING id;',
+            (transaction.user_id, transaction.date, transaction.amount, category_id, transaction.source, transaction.recurring)
         )
-        transaction_id = cur.fetchone()[0]
+        transaction_id = cur.fetchone()[0]  # Get the auto-generated ID
         conn.commit()
         cur.close()
         conn.close()
-        return {"id": transaction_id, "user_id": transaction.user_id, "date": transaction.date,
-                "amount": transaction.amount, "category_id": transaction.category_id,
-                "source": transaction.source, "recurring": transaction.recurring}
+        
+        return {
+            "id": transaction_id,  # Return the generated ID
+            "user_id": transaction.user_id,
+            "date": transaction.date,
+            "amount": transaction.amount,
+            "category_id": category_id,
+            "source": transaction.source,
+            "recurring": transaction.recurring
+        }
+    
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {e}")
+
 
 # Get All Transactions by user_id
 @app.get("/transactions/get_transactions_by_user")
@@ -234,7 +251,7 @@ def get_transactions_by_user(user_id: int):
             
             return [{
                 "id": t[0], "date": t[2], "amount": t[3], 
-                "category": t[4], "description": t[5], "recurring": t[6], 
+                "category": CATEGORY_DICT[t[4]], "description": t[5], "recurring": t[6], 
                 "type": "income" if t[3] >= 0 else "expense"
                 } for t in transactions]
         else:
