@@ -255,6 +255,47 @@ def delete_transaction(id: int = Query(..., description="ID of the transaction t
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {e}")
 
+@app.put("/transactions/update_transaction")
+def update_transaction(id: int, transaction: Transaction):
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
+        cur = conn.cursor()
+        
+        # Check if the transaction exists
+        cur.execute('SELECT id FROM "transactions" WHERE id = %s;', (id,))
+        existing_transaction = cur.fetchone()
+        
+        if not existing_transaction:
+            cur.close()
+            conn.close()
+            raise HTTPException(status_code=404, detail="Transaction not found")
+        
+        # Update the transaction
+        cur.execute('''
+            UPDATE "transactions"
+            SET user_id = %s, date = %s, amount = %s, category_id = %s, source = %s, recurring = %s
+            WHERE id = %s RETURNING id, user_id, date, amount, category_id, source, recurring;
+        ''', (transaction.user_id, transaction.date, transaction.amount, transaction.category_id, 
+              transaction.source, transaction.recurring, id))
+        
+        updated_transaction = cur.fetchone()
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return {
+            "id": updated_transaction[0],
+            "user_id": updated_transaction[1],
+            "date": updated_transaction[2],
+            "amount": updated_transaction[3],
+            "category_id": updated_transaction[4],
+            "source": updated_transaction[5],
+            "recurring": updated_transaction[6]
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error: {e}")
+
+
 # Run with: uvicorn app:app --host 0.0.0.0 --port 8000
 if __name__ == "__main__":
     uvicorn.run(app)
