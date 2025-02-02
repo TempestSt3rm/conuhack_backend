@@ -21,11 +21,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# User Pydantic model
 class User(BaseModel):
-    id: int
     name: str
     email: str
+
 
 # Category Pydantic model
 class Category(BaseModel):
@@ -72,14 +71,17 @@ def get_user(email: str = Query(..., description="User's email")):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {e}")
 
+
 @app.post("/users/add_user")
 def add_user(user: User):
     try:
         conn = psycopg2.connect(DATABASE_URL)
         cur = conn.cursor()
-        cur.execute('INSERT INTO "users" (id, name, email) VALUES (%s, %s, %s) RETURNING id;', 
-                    (user.id, user.name, user.email))
-        user_id = cur.fetchone()[0]
+        cur.execute(
+            'INSERT INTO "users" (name, email) VALUES (%s, %s) RETURNING id;',
+            (user.name, user.email)
+        )
+        user_id = cur.fetchone()[0]  # Get the generated ID
         conn.commit()
         cur.close()
         conn.close()
