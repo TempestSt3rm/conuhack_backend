@@ -186,7 +186,7 @@ class AddedTransaction(BaseModel):
     user_id: int
     date: str  # Use datetime.date if necessary
     amount: float
-    category: str
+    category_id: str
     source: str
     recurring : Optional[str]
 
@@ -201,7 +201,7 @@ def add_transaction(transaction: AddedTransaction):
             'INSERT INTO "transactions" (user_id, date, amount, category_id, source) '
             'VALUES (%s, %s, %s, %s, %s, %s) RETURNING id;',
             (transaction.user_id, transaction.date, transaction.amount, 
-             REVERSE_CATEGORY_DICT[transaction.category], transaction.source, transaction.recurring)
+             REVERSE_CATEGORY_DICT[transaction.category_id], transaction.source, transaction.recurring)
         )
         transaction_id = cur.fetchone()[0]  # Get the auto-generated ID
         conn.commit()
