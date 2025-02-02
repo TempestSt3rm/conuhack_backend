@@ -191,7 +191,7 @@ class Transaction(BaseModel):
     amount: float
     category_id: int
     source: str
-    recurring: bool  # Ensure it's a boolean
+    recurring: str  # Ensure it's a boolean
 
 # Add Transaction
 @app.post("/transactions/add_transaction")
