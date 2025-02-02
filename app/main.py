@@ -280,6 +280,7 @@ def get_all_transactions():
         raise HTTPException(status_code=500, detail=f"Error: {e}")
 
 # Delete Transaction
+#
 @app.delete("/transactions/delete_transaction")
 def delete_transaction(id: int = Query(..., description="ID of the transaction to delete")):
     try:
@@ -361,10 +362,11 @@ def verify_user(email: str):
         cur.close()
         conn.close()
 
-        if result:
+        if len(result) != 0:
             return {"isValid":True,"id": result[0][0],"email": result[0][1],"name": result[0][2] }  # Return user_id if found
         else:
-            return {"isValid":True,"username": None }  # Return None if email not found
+            return {"isValid":False,"username": None }  # Return None if email not found
+
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
