@@ -234,7 +234,7 @@ def get_transactions_by_user(user_id: int):
             
             return [{
                 "id": t[0], "date": t[2], "amount": t[3], 
-                "category": t[4], "description": t[5], "recurring": t[6], 
+                "category": CATEGORY_DICT[t[4]], "description": t[5], "recurring": t[6], 
                 "type": "income" if t[3] >= 0 else "expense"
                 } for t in transactions]
         else:
