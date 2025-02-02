@@ -199,9 +199,9 @@ def add_transaction(transaction: Transaction):
         conn = psycopg2.connect(DATABASE_URL)
         cur = conn.cursor()
         cur.execute(
-            'INSERT INTO "transactions" (id, user_id, date, amount, category_id, source, recurring) '
-            'VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id;',
-            (transaction.id, transaction.user_id, transaction.date, transaction.amount, 
+            'INSERT INTO "transactions" (user_id, date, amount, category_id, source, recurring) '
+            'VALUES (%s, %s, %s, %s, %s, %s) RETURNING id;',
+            (transaction.user_id, transaction.date, transaction.amount, 
              transaction.category_id, transaction.source, transaction.recurring)
         )
         transaction_id = cur.fetchone()[0]
